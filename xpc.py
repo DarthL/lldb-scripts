@@ -178,6 +178,46 @@ def int64_breakpoint(frame, bp_loc, dict):
                     log("{0}".format(output))
 
 
+def value_breakpoint(frame, bp_loc, dict):
+    """
+    xpc_object_t xpc_dictionary_get_value(xpc_object_t dictionary, const char *key);;
+    """
+
+    print("\n-------- xpc_dictionary_get_value -------\n")
+    log("\n-------- xpc_dictionary_get_value -------\n")
+
+    # Get the general purpose registers
+    registers = get_frame().GetRegisters()
+
+    for value in registers:
+        if "general purpose" in value.GetName().lower():
+            GPRS = value
+            break
+    print("\n")
+    for register in GPRS:
+        if register.GetName() == "x0":
+            response = lldb.SBCommandReturnObject()
+            interpreter = lldb.debugger.GetCommandInterpreter()
+            interpreter.HandleCommand("expr -o -- {0}".format(register.GetValue()), response)
+            if response.Succeeded():
+                output = response.GetOutput()
+                if output:
+                    print("-------- XPC Dictionary ------------------\n")
+                    print(output)
+                    log("-------- XPC Dictionary ------------------\n")
+                    log("{0}".format(output))
+        if register.GetName() == "x1":
+            response = lldb.SBCommandReturnObject()
+            interpreter = lldb.debugger.GetCommandInterpreter()
+            interpreter.HandleCommand("x/s {0}".format(register.GetValue()), response)
+            if response.Succeeded():
+                output = response.GetOutput()
+                if output:
+                    print("------- KEY ------------------------------\n")
+                    print(output)
+                    log("------- KEY ------------------------------\n")
+                    log("{0}".format(output))
+
 def data_breakpoint(frame, bp_loc, dict):
     """
     const void * xpc_dictionary_get_data(xpc_object_t dictionary, const char *key, size_t *length);
@@ -218,13 +258,58 @@ def data_breakpoint(frame, bp_loc, dict):
                     log("------- KEY ------------------------------\n")
                     log("{0}".format(output))
 
+def bytes_breakpoint(frame, bp_loc, dict):
+    """
+    const void * xpc_dictionary_get_bytes_ptr();
+    """
+
+    print("\n-------- xpc_dictionary_get_bytes_ptr -------\n")
+    log("\n-------- xpc_dictionary_get_bytes_ptr -------\n")
+
+    # Get the general purpose registers
+    registers = get_frame().GetRegisters()
+
+    for value in registers:
+        if "general purpose" in value.GetName().lower():
+            GPRS = value
+            break
+    print("\n")
+    for register in GPRS:
+        if register.GetName() == "x0":
+            response = lldb.SBCommandReturnObject()
+            interpreter = lldb.debugger.GetCommandInterpreter()
+            interpreter.HandleCommand("expr -o -- {0}".format(register.GetValue()), response)
+            if response.Succeeded():
+                output = response.GetOutput()
+                if output:
+                    print("-------- XPC Dictionary ------------------\n")
+                    print(output)
+                    log("-------- XPC Dictionary ------------------\n")
+                    log("{0}".format(output))
+        if register.GetName() == "x1":
+            response = lldb.SBCommandReturnObject()
+            interpreter = lldb.debugger.GetCommandInterpreter()
+            interpreter.HandleCommand("x/s {0}".format(register.GetValue()), response)
+            if response.Succeeded():
+                output = response.GetOutput()
+                if output:
+                    print("------- KEY ------------------------------\n")
+                    print(output)
+                    log("------- KEY ------------------------------\n")
+                    log("{0}".format(output))
+
 
 def xpc(debugger, command, result, internal_dict):
     """
     Setup breakpoints for various XPC functions
 
     xpc_dictionary_get_int64
+    xpc_dictionary_get_uint64
     xpc_dictionary_get_bool
+    xpc_dictionary_get_string
+    xpc_dictionary_get_data
+    xpc_dictionary_get_value
+    xpc_dictionary_get_bytes_ptr
 
     """
     target = debugger.GetSelectedTarget()
@@ -235,6 +320,8 @@ def xpc(debugger, command, result, internal_dict):
     getbool = target.BreakpointCreateByName("xpc_dictionary_get_bool")
     getstring = target.BreakpointCreateByName("xpc_dictionary_get_string")
     getdata = target.BreakpointCreateByName("xpc_dictionary_get_data")
+    getvalue = target.BreakpointCreateByName("xpc_dictionary_get_value")
+    getbytesptr = target.BreakpointCreateByName("xpc_dictionary_get_bytes_ptr")
 
     # Set callback functions
     getint64.SetScriptCallbackFunction("xpc.int64_breakpoint")
@@ -242,6 +329,9 @@ def xpc(debugger, command, result, internal_dict):
     getbool.SetScriptCallbackFunction("xpc.bool_breakpoint")
     getstring.SetScriptCallbackFunction("xpc.string_breakpoint")
     getdata.SetScriptCallbackFunction("xpc.data_breakpoint")
+    getvalue.SetScriptCallbackFunction("xpc.value_breakpoint")
+    getbytesptr.SetScriptCallbackFunction("xpc.bytes_breakpoint")
+
 
 
 def get_frame():
